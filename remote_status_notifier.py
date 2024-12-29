@@ -7,7 +7,6 @@ from slack_sdk.errors import SlackApiError
 SLACK_TOKEN = 'xoxb-443261833458-8229610109394-zCOFDQr5byxDKncftGuQr9t8'
 CHANNEL_NAME = 'slackbot-test'
 SLEEP_TIME = 30
-client = WebClient(token=SLACK_TOKEN)
 
 
 def get_remote_users() -> list[str]:
@@ -43,23 +42,21 @@ def monitor_remote_users(client: WebClient, channel_idx: str):
     last_status = None
     while True:
         remote_users = get_remote_users()
-        msg = (
+        status = (
             f'The workstation is currently in use by: {', '.join(remote_users)}'
             if remote_users else
             'The workstation is currently idle.'
         )
-        if msg != last_status:
-            send_slack_message(client, channel_idx, msg)
-            last_status = msg
+        if status != last_status:
+            send_slack_message(client, channel_idx, status)
+            last_status = status
         time.sleep(SLEEP_TIME)
 
 
 def main():
+    client = WebClient(token=SLACK_TOKEN)
     channel_idx = get_channel_idx(client, CHANNEL_NAME)
-    if channel_idx:
-        monitor_remote_users(client, channel_idx)
-    else:
-        print('Unable to find the specified Slack channel.')
+    monitor_remote_users(client, channel_idx)
 
 
 if __name__ == '__main__':
