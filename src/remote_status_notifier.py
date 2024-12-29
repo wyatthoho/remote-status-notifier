@@ -5,8 +5,9 @@ from slack_sdk.errors import SlackApiError
 
 
 SLACK_TOKEN = 'xoxb-443261833458-8229610109394-zCOFDQr5byxDKncftGuQr9t8'
+NAME_WORKSTATION = 'CAE-ComputeSvr'
 CHANNEL_NAME = 'slackbot-test'
-SLEEP_TIME = 30
+SLEEP_TIME = 20
 
 
 def get_remote_users() -> list[str]:
@@ -46,10 +47,10 @@ def main():
         users_now = get_remote_users()
         if not users_now:
             if users_ori:
-                message = f'{", ".join(users_ori)} has left.\nThe workstation is currently idle.'
+                message = f'{", ".join(users_ori)} has left.\nThe workstation {NAME_WORKSTATION} is currently idle.'
                 send_slack_message(client, channel_idx, message)
             if first_run:
-                message = 'The workstation is currently idle.'
+                message = f'The workstation {NAME_WORKSTATION} is currently idle.'
                 send_slack_message(client, channel_idx, message)
         else:
             if users_now != users_ori:
