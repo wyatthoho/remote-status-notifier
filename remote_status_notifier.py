@@ -10,7 +10,7 @@ SLEEP_TIME = 30
 client = WebClient(token=SLACK_TOKEN)
 
 
-def get_remote_users():
+def get_remote_users() -> list[str]:
     '''Retrieve the currently logged-in remote desktop users.'''
     users = [session.host for session in psutil.users() if session.host]
     return users
