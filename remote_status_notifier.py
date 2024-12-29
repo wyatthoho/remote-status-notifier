@@ -37,26 +37,29 @@ def send_slack_message(client: WebClient, channel_idx: str, message: str):
         print(f'Error sending message: {e.response['error']}')
 
 
-def monitor_remote_users(client: WebClient, channel_idx: str):
-    '''Monitor remote desktop users and notify Slack of status changes.'''
-    last_status = None
-    while True:
-        remote_users = get_remote_users()
-        status = (
-            f'The workstation is currently in use by: {', '.join(remote_users)}'
-            if remote_users else
-            'The workstation is currently idle.'
-        )
-        if status != last_status:
-            send_slack_message(client, channel_idx, status)
-            last_status = status
-        time.sleep(SLEEP_TIME)
-
-
 def main():
     client = WebClient(token=SLACK_TOKEN)
     channel_idx = get_channel_idx(client, CHANNEL_NAME)
-    monitor_remote_users(client, channel_idx)
+    first_run = True
+    users_ori = []
+    while True:
+        users_now = get_remote_users()
+        if not users_now:
+            if users_ori:
+                message = f'{", ".join(users_ori)} has left.\nThe workstation is currently idle.'
+                send_slack_message(client, channel_idx, message)
+            if first_run:
+                message = 'The workstation is currently idle.'
+                send_slack_message(client, channel_idx, message)
+        else:
+            if users_now != users_ori:
+                new_users = set(users_now) - set(users_ori)
+                for user in new_users:
+                    message = f'{user} has logged in!'
+                    send_slack_message(client, channel_idx, message)
+        users_ori = users_now
+        first_run = False
+        time.sleep(SLEEP_TIME)
 
 
 if __name__ == '__main__':
