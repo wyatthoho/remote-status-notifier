@@ -10,12 +10,18 @@ SLEEP_TIME = 30
 client = WebClient(token=SLACK_TOKEN)
 
 
-def get_conversation_id() -> str:
+def get_remote_users():
+    '''Retrieve the currently logged-in remote desktop users.'''
+    users = [session.host for session in psutil.users() if session.host]
+    return users
+
+
+def get_channel_idx(client: WebClient, channel_name: str) -> str:
     '''Fetch the conversation ID for the specified channel name.'''
     try:
         for result in client.conversations_list():
             for channel in result['channels']:
-                if channel['name'] == CHANNEL_NAME:
+                if channel['name'] == channel_name:
                     print(f'Found conversation ID: {channel['id']}')
                     return channel['id']
     except SlackApiError as e:
@@ -23,41 +29,35 @@ def get_conversation_id() -> str:
     return None
 
 
-def get_remote_users():
-    '''Retrieve the currently logged-in remote desktop users.'''
-    users = [session.host for session in psutil.users() if session.host]
-    return users
-
-
-def send_slack_message(conversation_id, message):
+def send_slack_message(client: WebClient, channel_idx: str, message: str):
     '''Send a message to the specified Slack channel.'''
     try:
-        result = client.chat_postMessage(channel=conversation_id, text=message)
+        result = client.chat_postMessage(channel=channel_idx, text=message)
         print(f'Message sent: {message}')
     except SlackApiError as e:
         print(f'Error sending message: {e.response['error']}')
 
 
-def monitor_remote_users(conversation_id):
+def monitor_remote_users(client: WebClient, channel_idx: str):
     '''Monitor remote desktop users and notify Slack of status changes.'''
     last_status = None
     while True:
         remote_users = get_remote_users()
-        status = (
+        msg = (
             f'The workstation is currently in use by: {', '.join(remote_users)}'
             if remote_users else
             'The workstation is currently idle.'
         )
-        if status != last_status:
-            send_slack_message(conversation_id, status)
-            last_status = status
+        if msg != last_status:
+            send_slack_message(client, channel_idx, msg)
+            last_status = msg
         time.sleep(SLEEP_TIME)
 
 
 def main():
-    conversation_id = get_conversation_id()
-    if conversation_id:
-        monitor_remote_users(conversation_id)
+    channel_idx = get_channel_idx(client, CHANNEL_NAME)
+    if channel_idx:
+        monitor_remote_users(client, channel_idx)
     else:
         print('Unable to find the specified Slack channel.')
 
