@@ -47,7 +47,7 @@ def main():
         users_now = get_remote_users()
         if not users_now:
             if users_ori:
-                message = f'{", ".join(users_ori)} has left.\nThe workstation {NAME_WORKSTATION} is currently idle.'
+                message = f'{", ".join(users_ori)} has left. The workstation {NAME_WORKSTATION} is currently idle.'
                 send_slack_message(client, channel_idx, message)
             if first_run:
                 message = f'The workstation {NAME_WORKSTATION} is currently idle.'
