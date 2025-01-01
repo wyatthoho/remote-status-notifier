@@ -1,13 +1,21 @@
+import os
 import time
 import psutil
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 
-SLACK_TOKEN = 'xoxb-443261833458-8229610109394-zCOFDQr5byxDKncftGuQr9t8'
-NAME_WORKSTATION = 'CAE-ComputeSvr'
+NAME_WORKSTATION = 'TEST'
 CHANNEL_NAME = 'slackbot-test'
 SLEEP_TIME = 20
+
+
+def get_slack_token() -> str:
+    '''Retrieve the Slack API token from environment variables.'''
+    token = os.getenv('SLACK_TOKEN')
+    if not token:
+        raise ValueError('SLACK_TOKEN environment variable is not set.')
+    return token
 
 
 def get_remote_users() -> list[str]:
@@ -39,7 +47,7 @@ def send_slack_message(client: WebClient, channel_idx: str, message: str):
 
 
 def main():
-    client = WebClient(token=SLACK_TOKEN)
+    client = WebClient(token=get_slack_token())
     channel_idx = get_channel_idx(client, CHANNEL_NAME)
     first_run = True
     users_ori = []
