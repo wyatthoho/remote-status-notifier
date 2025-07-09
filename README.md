@@ -19,3 +19,22 @@ packages.
 
 This project is licensed under the MIT License. See the 
 `LICENSE` file for details.
+
+## Running the Project
+First, configure the required system environment variables:
+
+- `SLACK_TOKEN`: The Slack API token.
+- `SLACK_CHANNEL_IDX`: The index of the Slack channel.
+
+To run the project, use the following command:
+```bash
+.\run_in_venv.ps1
+```
+
+This script will:
+
+- Automatically install any required dependencies (if needed)
+- Activate the Python virtual environment
+- Start the remote-status-notifier
+
+This ensures you have everything set up and running with a single command.
