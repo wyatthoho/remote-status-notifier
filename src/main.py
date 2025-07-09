@@ -5,9 +5,15 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 
-NAME_WORKSTATION = 'TEST'
-CHANNEL_NAME = 'slackbot-test'
 SLEEP_TIME = 20
+
+
+def get_computer_name() -> str:
+    '''Retrieve the computer name from environment variables.'''
+    computer_name = os.getenv('COMPUTERNAME')
+    if not computer_name:
+        raise ValueError('COMPUTERNAME environment variable is not set.')
+    return computer_name
 
 
 def get_slack_token() -> str:
@@ -18,23 +24,18 @@ def get_slack_token() -> str:
     return token
 
 
+def get_slack_channel_idx() -> str:
+    '''Retrieve the Slack channel index from environment variables.'''
+    channel_idx = os.getenv('SLACK_CHANNEL_IDX')
+    if not channel_idx:
+        raise ValueError('SLACK_CHANNEL_IDX environment variable is not set.')
+    return channel_idx
+
+
 def get_remote_users() -> list[str]:
     '''Retrieve the currently logged-in remote desktop users.'''
     users = [session.host for session in psutil.users() if session.host]
     return users
-
-
-def get_channel_idx(client: WebClient, channel_name: str) -> str:
-    '''Fetch the conversation ID for the specified channel name.'''
-    try:
-        for result in client.conversations_list():
-            for channel in result['channels']:
-                if channel['name'] == channel_name:
-                    print(f'Found conversation ID: {channel['id']}')
-                    return channel['id']
-    except SlackApiError as e:
-        print(f'Error fetching conversation ID: {e.response['error']}')
-    return None
 
 
 def send_slack_message(client: WebClient, channel_idx: str, message: str):
@@ -47,18 +48,19 @@ def send_slack_message(client: WebClient, channel_idx: str, message: str):
 
 
 def main():
+    commputer_name = get_computer_name()
     client = WebClient(token=get_slack_token())
-    channel_idx = get_channel_idx(client, CHANNEL_NAME)
+    channel_idx = get_slack_channel_idx()
     first_run = True
     users_ori = []
     while True:
         users_now = get_remote_users()
         if not users_now:
             if users_ori:
-                message = f'{", ".join(users_ori)} has left. The workstation {NAME_WORKSTATION} is currently idle.'
+                message = f'{", ".join(users_ori)} has left. The workstation {commputer_name} is currently idle.'
                 send_slack_message(client, channel_idx, message)
             if first_run:
-                message = f'The workstation {NAME_WORKSTATION} is currently idle.'
+                message = f'The workstation {commputer_name} is currently idle.'
                 send_slack_message(client, channel_idx, message)
         else:
             if users_now != users_ori:
