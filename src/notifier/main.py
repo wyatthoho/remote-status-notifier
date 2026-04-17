@@ -1,14 +1,31 @@
+import logging
 import sys
 import time
+from pathlib import Path
 
 from dotenv import load_dotenv, find_dotenv
+# from PIL import Image
+# from pystray import Icon, Menu, MenuItem
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 from notifier import logic
 
-
+# ICON_IMG = Path(__file__).parent / 'icon' / 'favicon.ico'
+# ICON_NAME = 'Remote Status Notifier'
+LOG_PATH = Path.home() / 'remote-status-notifier.log'
 SLEEP_TIME = 5
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    filename=LOG_PATH,
+    filemode='w',
+    level=logging.INFO,
+    format='%(asctime)s,%(msecs)03d [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    encoding='utf-8'
+)
 
 
 class SlackAgent:
@@ -24,9 +41,34 @@ class SlackAgent:
                 channel=self._channel_idx,
                 text=message
             )
-            print(f'Message sent: {message}')
+            logger.info(f'Message sent: {message}')
         except SlackApiError as e:
-            print(f'Error sending message: {e.response['error']}')
+            logger.info(f'Error sending message: {e.response['error']}')
+
+
+class Detector:
+    def __init__(self, commputer_name):
+        self.commputer_name = commputer_name
+        self.user_ori = None
+        self.user_now = logic.get_remote_user()
+
+    def run(self) -> str | None:
+        if self.user_now == self.user_ori:
+            message = None
+
+        # The user changed.
+        if self.user_now:
+            # Now, Someone in.
+            message = f'{self.user_now} has logged in!'
+        else:
+            # Now, Someone out
+            message = (
+                f'{self.user_ori} has left. '
+                f'The workstation {self.commputer_name} is currently idle.'
+            )
+
+        self.user_ori = self.user_now
+        return message
 
 
 def main():
@@ -40,30 +82,12 @@ def main():
         sys.exit(1)
 
     slack_agent = SlackAgent(token, channel_idx)
-
-    user_ori = None
+    detector = Detector(commputer_name)
+    
     while True:
-        user_now = logic.get_remote_user()
-
-        if user_now == user_ori:
-            continue
-
-        # The user changed.
-        if user_now:
-            # Now, Someone in.
-            message = f'{user_now} has logged in!'
-        else:
-            # Now, Someone out
-            message = (
-                f'{user_ori} has left. '
-                f'The workstation {commputer_name} is currently idle.'
-            )
-
-        user_ori = user_now
-
+        message = detector.run()
         if message:
             slack_agent.send_message(message)
-
         time.sleep(SLEEP_TIME)
 
 
