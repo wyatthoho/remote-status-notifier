@@ -12,7 +12,7 @@ from notifier import logic
 ICON_IMG = Path(__file__).parent / 'icon' / 'favicon.ico'
 ICON_NAME = 'Remote Status Notifier'
 LOG_PATH = Path.home() / 'remote-status-notifier.log'
-SLEEP_TIME = 5
+SLEEP_TIME = 10
 
 
 logger = logging.getLogger(__name__)
