@@ -1,18 +1,16 @@
 import logging
 import sys
-import time
+import threading
 from pathlib import Path
 
 from dotenv import load_dotenv, find_dotenv
-# from PIL import Image
-# from pystray import Icon, Menu, MenuItem
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+from PIL import Image
+from pystray import Icon, Menu, MenuItem
 
 from notifier import logic
 
-# ICON_IMG = Path(__file__).parent / 'icon' / 'favicon.ico'
-# ICON_NAME = 'Remote Status Notifier'
+ICON_IMG = Path(__file__).parent / 'icon' / 'favicon.ico'
+ICON_NAME = 'Remote Status Notifier'
 LOG_PATH = Path.home() / 'remote-status-notifier.log'
 SLEEP_TIME = 5
 
@@ -28,68 +26,64 @@ logging.basicConfig(
 )
 
 
-class SlackAgent:
-    def __init__(self, token: str = None, channel_idx: str = None):
-        self._token = token
-        self._channel_idx = channel_idx
-        self._client = WebClient(token=self._token)
-        self.send_message('Slack agent created.')
+class App:
+    def __init__(self):
+        self.computer_name, self.token, self.channel_idx = self._load_env_config()
+        self.menu = self._build_menu()
+        self.icon = self._build_icon()
 
-    def send_message(self, message: str):
+        self._main_event = threading.Event()
+        self._start_main_thread()
+        self.icon.run()
+
+    def _load_env_config(self) -> tuple[str, str, str]:
         try:
-            self._client.chat_postMessage(
-                channel=self._channel_idx,
-                text=message
+            load_dotenv(find_dotenv())
+            computer_name = logic.get_env_variable('COMPUTERNAME')
+            token = logic.get_env_variable('SLACK_TOKEN')
+            channel_idx = logic.get_env_variable('SLACK_CHANNEL_IDX')
+        except ValueError as e:
+            logger.error(f'Error reading variable: {e}')
+            sys.exit(1)
+        return computer_name, token, channel_idx
+
+    def _build_menu(self) -> Menu:
+        return Menu(
+            MenuItem(
+                text='Close',
+                action=self.on_close,
             )
-            logger.info(f'Message sent: {message}')
-        except SlackApiError as e:
-            logger.info(f'Error sending message: {e.response['error']}')
+        )
 
+    def _build_icon(self):
+        return Icon(
+            name=ICON_NAME,
+            title=ICON_NAME,
+            icon=Image.open(Path(ICON_IMG)),
+            menu=self.menu
+        )
 
-class Detector:
-    def __init__(self, commputer_name):
-        self.commputer_name = commputer_name
-        self.user_ori = None
-        self.user_now = logic.get_remote_user()
+    def _start_main_thread(self) -> None:
+        threading.Thread(target=self._monitor_loop, daemon=True).start()
 
-    def run(self) -> str | None:
-        if self.user_now == self.user_ori:
-            message = None
+    def _monitor_loop(self):
+       slack_agent = logic.SlackAgent(self.token, self.channel_idx)
+       detector = logic.Detector(self.computer_name)
+       logger.info('Main call started')
+       
+       while not self._main_event.is_set():
+           message = detector.run()
+           if message:
+               slack_agent.send_message(message)
+           self._main_event.wait(SLEEP_TIME)
+       
+       logger.info('Main call stopped.')
 
-        # The user changed.
-        if self.user_now:
-            # Now, Someone in.
-            message = f'{self.user_now} has logged in!'
-        else:
-            # Now, Someone out
-            message = (
-                f'{self.user_ori} has left. '
-                f'The workstation {self.commputer_name} is currently idle.'
-            )
-
-        self.user_ori = self.user_now
-        return message
-
-
-def main():
-    try:
-        load_dotenv(find_dotenv())
-        commputer_name = logic.get_env_variable('COMPUTERNAME')
-        token = logic.get_env_variable('SLACK_TOKEN')
-        channel_idx = logic.get_env_variable('SLACK_CHANNEL_IDX')
-    except ValueError as e:
-        print(f'Error reading variable: {e}')
-        sys.exit(1)
-
-    slack_agent = SlackAgent(token, channel_idx)
-    detector = Detector(commputer_name)
-    
-    while True:
-        message = detector.run()
-        if message:
-            slack_agent.send_message(message)
-        time.sleep(SLEEP_TIME)
+    def on_close(self, icon, item):
+        self._main_event.set()
+        icon.stop()
+        logger.info('App closed.')
 
 
 if __name__ == '__main__':
-    main()
+    App()
