@@ -46,19 +46,18 @@ def main():
         user_now = logic.get_remote_user()
 
         if user_now == user_ori:
-            # The user did not change.
             continue
+
+        # The user changed.
+        if user_now:
+            # Now, Someone in.
+            message = f'{user_now} has logged in!'
         else:
-            # The user changed.
-            if user_now:
-                # Now, Someone in.
-                message = f'{user_now} has logged in!'
-            else:
-                # Now, Someone out
-                message = (
-                    f'{user_ori} has left. '
-                    f'The workstation {commputer_name} is currently idle.'
-                )
+            # Now, Someone out
+            message = (
+                f'{user_ori} has left. '
+                f'The workstation {commputer_name} is currently idle.'
+            )
 
         user_ori = user_now
 
