@@ -2,11 +2,10 @@ import sys
 import time
 
 from dotenv import load_dotenv, find_dotenv
-
-from notifier import logic
-
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
+from notifier import logic
 
 
 SLEEP_TIME = 5
@@ -42,28 +41,22 @@ def main():
 
     slack_agent = SlackAgent(token, channel_idx)
 
-    user_ori = ''
+    user_ori = None
     while True:
-        message = ''
-        user_now = logic.get_remote_users()[0]
+        user_now = logic.get_remote_user()
 
-        if user_now:
-            # Workstation is occupied now.
-            if user_now == user_ori:
-                # Occupied by the same user. -> State not change.
-                ...
-            else:
-                # Occupied by a different user. -> State changed.
-                message = f'{user_now} has logged in!'
+        if user_now == user_ori:
+            # The user did not change.
+            continue
         else:
-            # Workstation is free now.
-            if user_ori == '':
-                # Originally free. -> State not change.
-                ...
+            # The user changed.
+            if user_now:
+                # Now, Someone in.
+                message = f'{user_now} has logged in!'
             else:
-                # Originally occupied. -> State changed.
+                # Now, Someone out
                 message = (
-                    f'{", ".join(user_ori)} has left. '
+                    f'{user_ori} has left. '
                     f'The workstation {commputer_name} is currently idle.'
                 )
 

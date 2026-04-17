@@ -9,8 +9,8 @@ description = "Real-time remote desktop user detection and Slack notification ag
 authors = [{ name = "wyatthoho", email = "wyatthoho@gmail.com" }]
 dependencies = [
     "psutil == 6.1.1",
-    "slack_sdk == 3.34.0",
     "python-dotenv >= 1.2.2",
+    "slack_sdk == 3.34.0",
 ]
 requires-python = ">=3.12"
 readme = "README.md"

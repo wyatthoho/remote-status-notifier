@@ -10,6 +10,8 @@ def get_env_variable(key: str) -> str:
     return var
 
 
-def get_remote_users() -> list[str]:
+def get_remote_user() -> str | None:
     users = [session.host for session in psutil.users() if session.host]
-    return users
+    if len(users) == 0:
+        return None
+    return users[0]
