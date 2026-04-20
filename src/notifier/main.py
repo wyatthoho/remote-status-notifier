@@ -35,8 +35,13 @@ class App:
         self.menu = self._build_menu()
         self.icon = self._build_icon()
 
-        self._main_event = threading.Event()
-        self._start_main_thread()
+        self._stop_event = threading.Event()
+
+        threading.Thread(
+            target=self._background_task,
+            daemon=True
+        ).start()
+
         self.icon.run()
 
     def _load_env_config(self) -> tuple[str, str, str]:
@@ -66,24 +71,23 @@ class App:
             menu=self.menu
         )
 
-    def _start_main_thread(self) -> None:
-        threading.Thread(target=self._monitor_loop, daemon=True).start()
-
-    def _monitor_loop(self):
+    def _background_task(self):
         agent = SlackAgent(self.token, self.channel_idx)
         detector = UserDetector(self.computer_name)
-        logger.info('Main call started')
+        logger.info('Background task started')
 
-        while not self._main_event.is_set():
+        while not self._stop_event.is_set():
             message = detector.check_user_state()
             if message:
                 agent.send_message(message)
-            self._main_event.wait(SLEEP_TIME)
 
-        logger.info('Main call stopped.')
+            # Wait before next check
+            self._stop_event.wait(SLEEP_TIME)
+
+        logger.info('Background task stopped.')
 
     def on_close(self, icon, item):
-        self._main_event.set()
+        self._stop_event.set()
         icon.stop()
         logger.info('App closed.')
 

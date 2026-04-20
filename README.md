@@ -1,34 +1,36 @@
 # remote-status-notifier
 
+A robust Python-based background utility that monitors 
+Remote Desktop (RDP) user activity and synchronizes status 
+changes to a Slack channel in real-time.
+
 ## Features
 
-A Python script to monitor remote desktop user activity 
-on a workstation and notify a specified Slack channel 
-about status changes.
+- **Real-time Monitoring**: 
+  Detects when users connect or disconnect from the workstation.
+- **Slack Integration**: 
+  Automated status notifications sent via Slack API.
+- **System Tray Integration**: 
+  Runs quietly in the background with a convenient system tray icon.
 
 ## Requirements
 
-- Python 3.12 or higher
+- Python 3.12+
 - Slack API token with access to the target Slack workspace
 - Access to the workstation to monitor user sessions
 
-See the `requirements.txt` file for the required Python
-packages.
-
-## License
-
-This project is licensed under the MIT License. See the 
-`LICENSE` file for details.
-
 ## Running the Project
-First, configure the required system environment variables:
 
-- `SLACK_TOKEN`: The Slack API token.
-- `SLACK_CHANNEL_IDX`: The index of the Slack channel.
+Create a `.env` file in the root directory and define the following variables:
+```
+COMPUTERNAME=YourWorkstationName
+SLACK_TOKEN=xoxb-your-slack-token
+SLACK_CHANNEL_IDX=your-channel-id-or-index
+```
 
 To run the project, use the following command:
 ```bash
-.\run_in_venv.ps1
+.\run.bat
 ```
 
 This script will:
@@ -38,3 +40,8 @@ This script will:
 - Start the remote-status-notifier
 
 This ensures you have everything set up and running with a single command.
+
+## License
+
+This project is licensed under the MIT License. See the 
+`LICENSE` file for details.

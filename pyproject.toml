@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "remote-status-notifier"
-version = "0.1.0"
+version = "1.0.0"
 description = "Real-time remote desktop user detection and Slack notification agent."
 authors = [{ name = "wyatthoho", email = "wyatthoho@gmail.com" }]
 dependencies = [
