@@ -7,7 +7,10 @@ from dotenv import load_dotenv, find_dotenv
 from PIL import Image
 from pystray import Icon, Menu, MenuItem
 
-from notifier import logic
+from notifier.utils import get_env_variable
+from notifier.slack_agent import SlackAgent
+from notifier.user_detector import UserDetector
+
 
 ICON_IMG = Path(__file__).parent / 'icon' / 'favicon.ico'
 ICON_NAME = 'Remote Status Notifier'
@@ -39,9 +42,9 @@ class App:
     def _load_env_config(self) -> tuple[str, str, str]:
         try:
             load_dotenv(find_dotenv())
-            computer_name = logic.get_env_variable('COMPUTERNAME')
-            token = logic.get_env_variable('SLACK_TOKEN')
-            channel_idx = logic.get_env_variable('SLACK_CHANNEL_IDX')
+            computer_name = get_env_variable('COMPUTERNAME')
+            token = get_env_variable('SLACK_TOKEN')
+            channel_idx = get_env_variable('SLACK_CHANNEL_IDX')
         except ValueError as e:
             logger.error(f'Error reading variable: {e}')
             sys.exit(1)
@@ -67,17 +70,17 @@ class App:
         threading.Thread(target=self._monitor_loop, daemon=True).start()
 
     def _monitor_loop(self):
-       slack_agent = logic.SlackAgent(self.token, self.channel_idx)
-       detector = logic.Detector(self.computer_name)
-       logger.info('Main call started')
-       
-       while not self._main_event.is_set():
-           message = detector.run()
-           if message:
-               slack_agent.send_message(message)
-           self._main_event.wait(SLEEP_TIME)
-       
-       logger.info('Main call stopped.')
+        agent = SlackAgent(self.token, self.channel_idx)
+        detector = UserDetector(self.computer_name)
+        logger.info('Main call started')
+
+        while not self._main_event.is_set():
+            message = detector.check_user_state()
+            if message:
+                agent.send_message(message)
+            self._main_event.wait(SLEEP_TIME)
+
+        logger.info('Main call stopped.')
 
     def on_close(self, icon, item):
         self._main_event.set()
